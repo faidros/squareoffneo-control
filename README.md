@@ -71,6 +71,15 @@ An earlier hardware test returned `OK` and changed occupancy from `d2` to
 `d4`; endpoint centering was not checked at the time. That test used the old
 one-sided offset, so its centering result is unverified.
 
+The corrected positive-rank offset was tested with `d1` to `d6`, encoded as
+`3,0:3,5.08|`. The board returned `OK`, and the final bitmap showed `d1` empty
+and `d6` occupied.
+
+The negative-rank offset was tested with `d6` to `d1`, encoded as
+`3,5:3,-0.08|`. The board returned `OK`, and the final bitmap showed `d6`
+empty and `d1` occupied. Visual inspection found the queen fairly well centered
+on `d1`.
+
 The live occupancy preflight was also verified with `a2` to `a3`: it read the
 board bitmap, sent `0,1:0,1.92|`, received `OK`, and the bitmap changed from
 `a2` occupied to `a3` occupied. When the requested source square was empty, the
@@ -79,6 +88,13 @@ CLI refused to send a motor route.
 The live preflight also refused `a1` to `a4` because `a3` was occupied. A
 knight route from `b1` to `c3` was accepted with `OK`, and the bitmap changed
 from `b1` occupied to `c3` occupied.
+
+A capture was tested with `--capture d1 d7`. The captured pawn was routed via
+empty squares to the first parking point right of h4 (`i4`, x=8, y=3); after
+`OK` and a bitmap showing d7 empty, the queen moved from d1 to d7. Both steps
+were confirmed, and visual inspection found the queen perfectly centered on
+d7. Since off-board parking points are not represented in the bitmap, the
+program cannot yet track whether a parking point is already occupied.
 
 ## Next step
 
@@ -100,5 +116,6 @@ and left the king off-center. After correcting the offset, both king and rook
 routes returned `OK` with the expected bitmap after each step. The final bitmap
 confirmed the king on `g1` and rook on `f1`.
 
-Captures and promotion still need verified physical sequences. Next, connect
-the Neo-specific transport and route planner to `NeoController`.
+The tested capture sequence works, but managing multiple occupied parking
+points and promotions still need work. Next, connect the Neo-specific transport
+and route planner to `NeoController`.

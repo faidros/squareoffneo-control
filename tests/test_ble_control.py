@@ -47,9 +47,12 @@ class FakeBleakClient:
         source, target = {
             "4,0:6.08,0|": ("e1", "g1"),
             "7,0:6.5,0.5:5.5,0.5:4.92,0|": ("h1", "f1"),
+            "3,6:3,5:4,5:5,5:6,5:7,5:7,4:7,3:8.08,2.92|": ("d7", None),
+            "3,0:3,6.08|": ("d1", "d7"),
         }[route]
         self.occupancy.remove(source)
-        self.occupancy.add(target)
+        if target is not None:
+            self.occupancy.add(target)
         self.callbacks[ble_control.MOVE_NOTIFY_UUID](
             ble_control.MOVE_NOTIFY_UUID, bytearray(b"OK")
         )
@@ -80,6 +83,23 @@ class CastlingBleControlTests(unittest.IsolatedAsyncioTestCase):
                 await ble_control.run("fake", "e1", "g1", castle=True)
 
         self.assertEqual(FakeBleakClient.writes, [])
+
+    async def test_capture_parks_victim_then_moves_queen(self) -> None:
+        FakeBleakClient.initial_occupancy = {"d1", "d7", "e7"}
+        with patch.dict(sys.modules, {"bleak": SimpleNamespace(BleakClient=FakeBleakClient)}):
+            await ble_control.run("fake", "d1", "d7", capture=True)
+
+        self.assertEqual(
+            FakeBleakClient.writes,
+            [
+                (
+                    ble_control.MOVE_UUID,
+                    "3,6:3,5:4,5:5,5:6,5:7,5:7,4:7,3:8.08,2.92|",
+                    True,
+                ),
+                (ble_control.MOVE_UUID, "3,0:3,6.08|", True),
+            ],
+        )
 
 
 if __name__ == "__main__":

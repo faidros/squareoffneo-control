@@ -65,6 +65,25 @@ class NeoMotorRoutePlannerTests(unittest.TestCase):
                 "d2", "d4", occupied_squares={"d2", "d4"}
             )
 
+    def test_plans_capture_to_i4_before_capturing_move(self) -> None:
+        occupied = {
+            "a1", "a2", "a7", "a8", "b1", "b2", "b8", "c1", "c2", "c7",
+            "c8", "d1", "d7", "d8", "e1", "e2", "e7", "e8", "f1", "f2",
+            "f7", "f8", "g1", "g2", "g7", "g8", "h1", "h2", "h7", "h8",
+        }
+
+        plan = self.planner.plan_capture(
+            "d1", "d7", occupied_squares=occupied
+        )
+
+        self.assertEqual(
+            self.planner.encode_route(plan.parking_route),
+            "3,6:3,5:4,5:5,5:6,5:7,5:7,4:7,3:8.08,2.92|",
+        )
+        self.assertEqual(
+            self.planner.encode_route(plan.capturing_route), "3,0:3,6.08|"
+        )
+
     def test_rejects_capture_and_special_moves(self) -> None:
         occupied = {"e5", "f7"}
         unsupported_moves = (

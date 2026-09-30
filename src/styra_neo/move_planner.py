@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import deque
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from enum import Enum
@@ -58,6 +59,14 @@ class MotorRoutePlan:
 class CastlingPlan:
     king: MotorRoutePlan
     rook: MotorRoutePlan
+
+
+@dataclass(frozen=True)
+class CaptureRoutePlan:
+    captured_square: str
+    parking_position: tuple[float, float]
+    parking_route: tuple[tuple[float, float], ...]
+    capturing_route: tuple[tuple[float, float], ...]
 
 
 class NeoMotorRoutePlanner:
@@ -172,6 +181,77 @@ class NeoMotorRoutePlanner:
         return CastlingPlan(
             king=MotorRoutePlan(king_from, king_to, king_route),
             rook=MotorRoutePlan(rook_from, rook_to, rook_route),
+        )
+
+    def plan_capture(
+        self,
+        from_square: str,
+        captured_square: str,
+        *,
+        occupied_squares: Iterable[str],
+        parking_position: tuple[float, float] = (8.0, 3.0),
+    ) -> CaptureRoutePlan:
+        start = square_to_index(from_square)
+        captured = square_to_index(captured_square)
+        occupied = {square_to_index(square) for square in occupied_squares}
+        if start not in occupied:
+            raise MotorRouteError(f"source square {from_square} is not occupied")
+        if captured not in occupied:
+            raise MotorRouteError(
+                f"capture square {captured_square} is not occupied"
+            )
+        if start == captured:
+            raise MotorRouteError("capturing piece and captured piece must differ")
+
+        parking_file, parking_rank = parking_position
+        if not 7.5 < parking_file <= 8.5:
+            raise MotorRouteError("capture parking must be just right of the h-file")
+        if not 0 <= parking_rank <= 7 or not parking_rank.is_integer():
+            raise MotorRouteError("capture parking rank must align with a board rank")
+
+        entry = (7, int(parking_rank))
+        remaining_occupied = occupied - {captured}
+        if entry in remaining_occupied:
+            raise MotorRouteError("capture parking entry square is occupied")
+
+        parents: dict[tuple[int, int], tuple[int, int] | None] = {captured: None}
+        frontier = deque([captured])
+        while frontier and entry not in parents:
+            current = frontier.popleft()
+            for file_step, rank_step in ((1, 0), (0, -1), (0, 1), (-1, 0)):
+                candidate = (current[0] + file_step, current[1] + rank_step)
+                if not (0 <= candidate[0] < 8 and 0 <= candidate[1] < 8):
+                    continue
+                if candidate in remaining_occupied or candidate in parents:
+                    continue
+                parents[candidate] = current
+                frontier.append(candidate)
+
+        if entry not in parents:
+            raise MotorRouteError("no clear route to the capture parking entry")
+
+        board_path = [entry]
+        while board_path[-1] != captured:
+            parent = parents[board_path[-1]]
+            if parent is None:
+                raise MotorRouteError("could not reconstruct capture parking route")
+            board_path.append(parent)
+        board_path.reverse()
+        parking_route = tuple(board_path) + (parking_position,)
+        remaining_occupied_squares = {
+            index_to_square(file_index, rank_index)
+            for file_index, rank_index in remaining_occupied
+        }
+        capturing_route = self.plan_route(
+            from_square,
+            captured_square,
+            occupied_squares=remaining_occupied_squares,
+        )
+        return CaptureRoutePlan(
+            captured_square=captured_square,
+            parking_position=parking_position,
+            parking_route=parking_route,
+            capturing_route=capturing_route,
         )
 
     def plan_move(

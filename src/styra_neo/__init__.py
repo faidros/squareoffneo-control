@@ -4,6 +4,7 @@ from .coords import BoardCoords, index_to_square, square_to_index
 from .controller import NeoController
 from .move_events import BoardMove, MoveEventParser
 from .move_planner import (
+    CaptureRoutePlan,
     CastlingPlan,
     MotorRouteError,
     MotorRoutePlan,
@@ -20,6 +21,7 @@ __all__ = [
     "BoardResponse",
     "BoardMove",
     "MovePlan",
+    "CaptureRoutePlan",
     "CastlingPlan",
     "MoveEventParser",
     "MotorRoutePlan",
