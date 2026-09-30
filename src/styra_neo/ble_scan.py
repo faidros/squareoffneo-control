@@ -4,6 +4,7 @@ import argparse
 import asyncio
 
 from .board_ble import BoardConnectionError, discover_ble_devices
+from .move_events import MoveEventParser
 
 
 async def scan(timeout: float) -> None:
@@ -61,6 +62,7 @@ async def listen(address: str, timeout: float) -> None:
                 await client.start_notify(characteristic.uuid, on_notification)
 
             print(f"Listening on {len(notify_characteristics)} notify characteristics")
+            move_parser = MoveEventParser()
             end_time = asyncio.get_running_loop().time() + timeout
             while True:
                 remaining = end_time - asyncio.get_running_loop().time()
@@ -74,6 +76,11 @@ async def listen(address: str, timeout: float) -> None:
                     break
                 text = data.decode("ascii", errors="replace")
                 print(f"{sender}\thex={data.hex()}\ttext={text!r}", flush=True)
+                for move in move_parser.feed(data):
+                    print(
+                        f"Internal move: {move.from_square} -> {move.to_square}",
+                        flush=True,
+                    )
 
             for characteristic in notify_characteristics:
                 await client.stop_notify(characteristic.uuid)
