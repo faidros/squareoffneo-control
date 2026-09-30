@@ -55,13 +55,13 @@ class BleakTransport:
         self,
         address: str,
         write_uuid: str,
-        notify_uuid: str | None = None,
+        notify_uuid: str | list[str] | None = None,
         *,
         read_timeout: float = 5.0,
     ) -> None:
         self.address = address
         self.write_uuid = write_uuid
-        self.notify_uuid = notify_uuid or write_uuid
+        self.notify_uuids = [notify_uuid or write_uuid] if isinstance(notify_uuid, str) else (notify_uuid or [write_uuid])
         self.read_timeout = read_timeout
         self._client = None
         self._notifications: asyncio.Queue[bytes] = asyncio.Queue()
@@ -77,7 +77,8 @@ class BleakTransport:
         self._client = BleakClient(self.address)
         try:
             await self._client.connect()
-            await self._client.start_notify(self.notify_uuid, self._on_notification)
+            for notify_uuid in self.notify_uuids:
+                await self._client.start_notify(notify_uuid, self._on_notification)
         except Exception as exc:
             await self.disconnect()
             raise BoardConnectionError(
@@ -89,7 +90,8 @@ class BleakTransport:
             return
         try:
             if self._client.is_connected:
-                await self._client.stop_notify(self.notify_uuid)
+                for notify_uuid in self.notify_uuids:
+                    await self._client.stop_notify(notify_uuid)
                 await self._client.disconnect()
         finally:
             self._client = None
@@ -132,9 +134,13 @@ class BoardBLEClient:
     async def disconnect(self) -> None:
         await self.transport.disconnect()
 
-    async def send_command(self, command: str) -> BoardResponse | None:
+    async def send_command(
+        self, command: str, *, wait_for_response: bool = True
+    ) -> BoardResponse | None:
         framed = BoardProtocol.encode(command)
         await self.transport.write(framed.encode("ascii"))
+        if not wait_for_response:
+            return None
         response = await self.transport.read()
         if not response:
             return None
