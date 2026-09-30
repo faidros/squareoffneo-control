@@ -33,10 +33,18 @@ class BoardProtocol:
             raise ProtocolError("message cannot be empty")
         if message.startswith("x") and message.endswith("z") and len(message) >= 3:
             body = message[1:-1]
+        elif message.endswith("*") and len(message) >= 2:
+            body = message[:-1]
+        else:
+            raise ProtocolError(f"unsupported board message: {message!r}")
+
+        if "-" in body:
+            code, payload = body.split("-", maxsplit=1)
+            payload = f"-{payload}"
+        else:
             code = body[:2] if len(body) >= 2 else body
             payload = body[2:] if len(body) > 2 else ""
-            return BoardResponse(raw=message, code=code, payload=payload)
-        raise ProtocolError(f"unsupported board message: {message!r}")
+        return BoardResponse(raw=message, code=code, payload=payload)
 
     @staticmethod
     def move_command(from_square: str, to_square: str) -> str:

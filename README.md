@@ -33,6 +33,11 @@ Inspect a device's GATT services with:
 python -m styra_neo.ble_scan --address 59140460-88DD-27DA-D0F8-3CE9D4E4609C
 ```
 
+The public `mrquincle/squareoff` research matches the services found on this
+board: write to the Nordic UART RX characteristic and listen for notifications
+on TX. It documents move commands such as `xd2d4z` and acknowledgements such as
+`12-OK*`.
+
 Listen to raw notifications for 20 seconds while making a move:
 
 ```text
