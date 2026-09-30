@@ -8,6 +8,9 @@ version = "0.1.0"
 description = "Starter kit for controlling a Square Off Neo chessboard"
 readme = "README.md"
 requires-python = ">=3.14"
+dependencies = [
+	"bleak>=0.22",
+]
 
 [tool.setuptools]
 package-dir = {"" = "src"}
