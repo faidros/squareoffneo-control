@@ -142,3 +142,10 @@ class BoardBLEClient:
 
     async def move(self, from_square: str, to_square: str) -> BoardResponse | None:
         return await self.send_command(f"{from_square}{to_square}")
+
+    async def start_game_black(self) -> list[BoardResponse | None]:
+        """Run the documented Square Off setup sequence before sending moves."""
+        responses: list[BoardResponse | None] = []
+        for command in ("RSTVAR", "CONNECTED", "BOARDTYPE", "GAMEBLACK"):
+            responses.append(await self.send_command(command))
+        return responses

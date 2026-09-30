@@ -47,6 +47,12 @@ python -m styra_neo.ble_scan --address 59140460-88DD-27DA-D0F8-3CE9D4E4609C --li
 Observed traffic includes events such as `e2u` (piece lifted from `e2`) and
 `e4d` (piece placed on `e4`), plus a 64-character board-state bitmap.
 
+To try the documented setup sequence and one controlled move:
+
+```text
+python -m styra_neo.ble_control d2 d4
+```
+
 ## Next step
 
 Capture notifications and confirm the command format before sending motor
