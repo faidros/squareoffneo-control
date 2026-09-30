@@ -22,7 +22,18 @@ async def probe(address: str) -> None:
                 print(f"Service {service.uuid} {service.description}")
                 for characteristic in service.characteristics:
                     properties = ",".join(characteristic.properties)
-                    print(f"  {characteristic.uuid} [{properties}]")
+                    max_write = getattr(
+                        characteristic, "max_write_without_response_size", None
+                    )
+                    print(
+                        f"  {characteristic.uuid} handle={characteristic.handle} "
+                        f"[{properties}] max_write_without_response={max_write}"
+                    )
+                    for descriptor in characteristic.descriptors:
+                        print(
+                            f"    descriptor {descriptor.uuid} "
+                            f"handle={descriptor.handle}"
+                        )
                     if "read" in characteristic.properties:
                         try:
                             value = await client.read_gatt_char(characteristic.uuid)
