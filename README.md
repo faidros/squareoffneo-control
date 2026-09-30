@@ -47,7 +47,8 @@ such as `xd2d4z`; the Neo-specific
 [protocol notes](https://github.com/karlic/MikoNeoDriver/blob/main/Documentation/MikoNeoBoardProtocol.md)
 send raw coordinate routes to `f9664d70-93ff-4cfe-9bfe-b5866aa5bef2` and
 receive move acknowledgements on `4496994f-2600-4e7e-81d5-e0f7b67ebd48`.
-For example, `d2` to `d4` is sent as `3,1:3,2.92|`.
+For example, `d2` to `d4` is encoded as `3,1:3,3.08|`. The endpoint correction
+now follows the direction of travel on each changing axis.
 
 Listen to raw notifications for 20 seconds while making a move:
 
@@ -66,9 +67,9 @@ To send one direct motor move:
 ./.venv314/bin/python -m styra_neo.ble_control d2 d4
 ```
 
-Verified on the connected board: this route returned `OK`, and the board
-occupancy changed from `d2` occupied / `d4` empty to `d2` empty / `d4`
-occupied.
+An earlier hardware test returned `OK` and changed occupancy from `d2` to
+`d4`; endpoint centering was not checked at the time. That test used the old
+one-sided offset, so its centering result is unverified.
 
 The live occupancy preflight was also verified with `a2` to `a3`: it read the
 board bitmap, sent `0,1:0,1.92|`, received `OK`, and the bitmap changed from
@@ -82,7 +83,22 @@ from `b1` occupied to `c3` occupied.
 ## Next step
 
 `NeoMotorRoutePlanner` plans clear straight routes and routes knights around
-occupied squares. It rejects captures, castling, and promotion until their
-physical piece-parking and sequencing behavior is known. The BLE command now
-requires a live board-state bitmap before sending a route. Next, connect this
-Neo-specific transport and route planner to `NeoController`.
+occupied squares. The BLE command requires a live board-state bitmap before
+sending a route. Castling is planned king-first, then rook around the king; each
+step must return `OK` and the expected board bitmap before the next is sent.
+
+To request kingside castling after arranging and verifying a legal position:
+
+```text
+./.venv314/bin/python -m styra_neo.ble_control --castle e1 g1
+```
+
+The caller must verify chess legality, including that the king is not in check
+and does not cross an attacked square. The bitmap reports occupancy only, not
+piece identity. The first hardware attempt used the incorrect endpoint offset
+and left the king off-center. After correcting the offset, both king and rook
+routes returned `OK` with the expected bitmap after each step. The final bitmap
+confirmed the king on `g1` and rook on `f1`.
+
+Captures and promotion still need verified physical sequences. Next, connect
+the Neo-specific transport and route planner to `NeoController`.

@@ -47,6 +47,19 @@ class MotorRouteError(ValueError):
     """Raised when a safe Neo motor route cannot be planned."""
 
 
+@dataclass(frozen=True)
+class MotorRoutePlan:
+    from_square: str
+    to_square: str
+    route: tuple[tuple[float, float], ...]
+
+
+@dataclass(frozen=True)
+class CastlingPlan:
+    king: MotorRoutePlan
+    rook: MotorRoutePlan
+
+
 class NeoMotorRoutePlanner:
     """Plans a direct Neo route or an obstacle-aware knight route."""
 
@@ -108,6 +121,59 @@ class NeoMotorRoutePlanner:
 
         return (start, target)
 
+    def plan_castle(
+        self,
+        king_from: str,
+        king_to: str,
+        *,
+        occupied_squares: Iterable[str],
+    ) -> CastlingPlan:
+        king_start = square_to_index(king_from)
+        king_target = square_to_index(king_to)
+        home_rank = king_start[1]
+        if king_start[0] != 4 or home_rank not in {0, 7}:
+            raise MotorRouteError("castling king must start on e1 or e8")
+        if king_target[1] != home_rank or king_target[0] not in {2, 6}:
+            raise MotorRouteError("castling king target must be c1, g1, c8, or g8")
+
+        kingside = king_target[0] == 6
+        rook_from = index_to_square(7 if kingside else 0, home_rank)
+        rook_to = index_to_square(5 if kingside else 3, home_rank)
+        occupied = frozenset(occupied_squares)
+
+        king_route = self.plan_route(
+            king_from,
+            king_to,
+            occupied_squares=occupied,
+        )
+        self.plan_route(
+            rook_from,
+            rook_to,
+            occupied_squares=occupied,
+        )
+
+        file_direction = -1 if kingside else 1
+        rank_direction = 1 if home_rank == 0 else -1
+        rook_start_file = 7 if kingside else 0
+        rook_target_file = 5 if kingside else 3
+        corners = tuple(
+            (
+                rook_start_file + file_direction * (step + 0.5),
+                home_rank + rank_direction * 0.5,
+            )
+            for step in range(abs(rook_target_file - rook_start_file))
+        )
+        rook_route = (
+            square_to_index(rook_from),
+            *corners,
+            square_to_index(rook_to),
+        )
+
+        return CastlingPlan(
+            king=MotorRoutePlan(king_from, king_to, king_route),
+            rook=MotorRoutePlan(rook_from, rook_to, rook_route),
+        )
+
     def plan_move(
         self,
         move: MovePlan,
@@ -115,7 +181,7 @@ class NeoMotorRoutePlanner:
         occupied_squares: Iterable[str],
     ) -> tuple[tuple[float, float], ...]:
         if move.is_castle:
-            raise MotorRouteError("castling needs a coordinated king and rook route")
+            raise MotorRouteError("use plan_castle to plan both castling pieces")
         if move.promotion is not None:
             raise MotorRouteError("promotion needs a physical piece replacement")
         if move.capture_square is not None:
@@ -137,15 +203,15 @@ class NeoMotorRoutePlanner:
             f"{format_coordinate(file_index)},{format_coordinate(rank_index)}"
             for file_index, rank_index in route[:-1]
         ]
-        previous_file, previous_rank = route[-2]
+        start_file, start_rank = route[0]
         target_file, target_rank = route[-1]
-        if target_file != previous_file:
-            target_file -= 0.08
+        if target_file != start_file:
+            target_file += 0.08 if target_file > start_file else -0.08
             target_file_text = f"{target_file:.2f}"
         else:
             target_file_text = format_coordinate(target_file)
-        if target_rank != previous_rank:
-            target_rank -= 0.08
+        if target_rank != start_rank:
+            target_rank += 0.08 if target_rank > start_rank else -0.08
             target_rank_text = f"{target_rank:.2f}"
         else:
             target_rank_text = format_coordinate(target_rank)

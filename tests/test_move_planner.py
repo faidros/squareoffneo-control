@@ -17,12 +17,17 @@ class NeoMotorRoutePlannerTests(unittest.TestCase):
     def test_encodes_clear_straight_route(self) -> None:
         route = self.planner.plan_route("d2", "d4", occupied_squares={"d2"})
 
-        self.assertEqual(self.planner.encode_route(route), "3,1:3,2.92|")
+        self.assertEqual(self.planner.encode_route(route), "3,1:3,3.08|")
 
     def test_offsets_horizontal_endpoint_on_file_axis(self) -> None:
         route = self.planner.plan_route("a1", "c1", occupied_squares={"a1"})
 
-        self.assertEqual(self.planner.encode_route(route), "0,0:1.92,0|")
+        self.assertEqual(self.planner.encode_route(route), "0,0:2.08,0|")
+
+    def test_offsets_endpoint_in_negative_rank_direction(self) -> None:
+        route = self.planner.plan_route("d4", "d2", occupied_squares={"d4"})
+
+        self.assertEqual(self.planner.encode_route(route), "3,3:3,0.92|")
 
     def test_decodes_board_occupancy_bitmap(self) -> None:
         bitmap = ["0"] * 64
@@ -51,7 +56,7 @@ class NeoMotorRoutePlannerTests(unittest.TestCase):
 
         self.assertEqual(
             self.planner.encode_route(route),
-            "1,0:1.5,0.5:1.5,1.5:1.92,1.92|",
+            "1,0:1.5,0.5:1.5,1.5:2.08,2.08|",
         )
 
     def test_rejects_occupied_destination(self) -> None:
@@ -72,6 +77,53 @@ class NeoMotorRoutePlannerTests(unittest.TestCase):
             with self.subTest(move=move):
                 with self.assertRaises(MotorRouteError):
                     self.planner.plan_move(move, occupied_squares=occupied)
+
+    def test_plans_all_castling_routes_king_first(self) -> None:
+        cases = (
+            (
+                "e1",
+                "g1",
+                {"e1", "h1"},
+                "4,0:6.08,0|",
+                "7,0:6.5,0.5:5.5,0.5:4.92,0|",
+            ),
+            (
+                "e1",
+                "c1",
+                {"e1", "a1"},
+                "4,0:1.92,0|",
+                "0,0:0.5,0.5:1.5,0.5:2.5,0.5:3.08,0|",
+            ),
+            (
+                "e8",
+                "g8",
+                {"e8", "h8"},
+                "4,7:6.08,7|",
+                "7,7:6.5,6.5:5.5,6.5:4.92,7|",
+            ),
+            (
+                "e8",
+                "c8",
+                {"e8", "a8"},
+                "4,7:1.92,7|",
+                "0,7:0.5,6.5:1.5,6.5:2.5,6.5:3.08,7|",
+            ),
+        )
+
+        for king_from, king_to, occupied, king_route, rook_route in cases:
+            with self.subTest(king_from=king_from, king_to=king_to):
+                plan = self.planner.plan_castle(
+                    king_from, king_to, occupied_squares=occupied
+                )
+
+                self.assertEqual(self.planner.encode_route(plan.king.route), king_route)
+                self.assertEqual(self.planner.encode_route(plan.rook.route), rook_route)
+
+    def test_rejects_castle_with_blocked_king_path(self) -> None:
+        with self.assertRaisesRegex(MotorRouteError, "blocked at f1"):
+            self.planner.plan_castle(
+                "e1", "g1", occupied_squares={"e1", "f1", "h1"}
+            )
 
     def test_rejects_non_line_non_knight_route(self) -> None:
         with self.assertRaisesRegex(MotorRouteError, "not a straight or knight move"):
