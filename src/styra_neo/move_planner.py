@@ -283,15 +283,15 @@ class NeoMotorRoutePlanner:
             f"{format_coordinate(file_index)},{format_coordinate(rank_index)}"
             for file_index, rank_index in route[:-1]
         ]
-        start_file, start_rank = route[0]
+        previous_file, previous_rank = route[-2]
         target_file, target_rank = route[-1]
-        if target_file != start_file:
-            target_file += 0.08 if target_file > start_file else -0.08
+        if target_file != previous_file:
+            target_file += 0.08 if target_file > previous_file else -0.08
             target_file_text = f"{target_file:.2f}"
         else:
             target_file_text = format_coordinate(target_file)
-        if target_rank != start_rank:
-            target_rank += 0.08 if target_rank > start_rank else -0.08
+        if target_rank != previous_rank:
+            target_rank += 0.08 if target_rank > previous_rank else -0.08
             target_rank_text = f"{target_rank:.2f}"
         else:
             target_rank_text = format_coordinate(target_rank)

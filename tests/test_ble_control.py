@@ -46,8 +46,8 @@ class FakeBleakClient:
         type(self).writes.append((uuid, route, response))
         source, target = {
             "4,0:6.08,0|": ("e1", "g1"),
-            "7,0:6.5,0.5:5.5,0.5:4.92,0|": ("h1", "f1"),
-            "3,6:3,5:4,5:5,5:6,5:7,5:7,4:7,3:8.08,2.92|": ("d7", None),
+            "7,0:6.5,0.5:5.5,0.5:4.92,-0.08|": ("h1", "f1"),
+            "3,6:3,5:4,5:5,5:6,5:7,5:7,4:7,3:8.08,3|": ("d7", None),
             "3,0:3,6.08|": ("d1", "d7"),
         }[route]
         self.occupancy.remove(source)
@@ -72,7 +72,7 @@ class CastlingBleControlTests(unittest.IsolatedAsyncioTestCase):
             FakeBleakClient.writes,
             [
                 (ble_control.MOVE_UUID, "4,0:6.08,0|", True),
-                (ble_control.MOVE_UUID, "7,0:6.5,0.5:5.5,0.5:4.92,0|", True),
+                (ble_control.MOVE_UUID, "7,0:6.5,0.5:5.5,0.5:4.92,-0.08|", True),
             ],
         )
 
@@ -94,7 +94,7 @@ class CastlingBleControlTests(unittest.IsolatedAsyncioTestCase):
             [
                 (
                     ble_control.MOVE_UUID,
-                    "3,6:3,5:4,5:5,5:6,5:7,5:7,4:7,3:8.08,2.92|",
+                    "3,6:3,5:4,5:5,5:6,5:7,5:7,4:7,3:8.08,3|",
                     True,
                 ),
                 (ble_control.MOVE_UUID, "3,0:3,6.08|", True),

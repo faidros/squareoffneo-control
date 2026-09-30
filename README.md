@@ -116,6 +116,13 @@ and left the king off-center. After correcting the offset, both king and rook
 routes returned `OK` with the expected bitmap after each step. The final bitmap
 confirmed the king on `g1` and rook on `f1`.
 
+Long castling was verified on hardware after centering the rook on `a1`. The
+king moved `e1` to `c1`, then the rook followed a corner route to `d1` ending
+at `3.08,-0.08`. Both routes returned `OK` with the expected bitmap, and the
+final scan showed `c1` and `d1` occupied while `e1` and `a1` were empty. The
+endpoint offset is calculated relative to the final waypoint segment.
+
 The tested capture sequence works, but managing multiple occupied parking
-points and promotions still need work. Next, connect the Neo-specific transport
-and route planner to `NeoController`.
+points and promotions still need work. Next, retry long castling with the
+corrected corner approach, then connect the Neo-specific transport and route
+planner to `NeoController`.
