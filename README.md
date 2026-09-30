@@ -33,6 +33,15 @@ Inspect a device's GATT services with:
 python -m styra_neo.ble_scan --address 59140460-88DD-27DA-D0F8-3CE9D4E4609C
 ```
 
+Listen to raw notifications for 20 seconds while making a move:
+
+```text
+python -m styra_neo.ble_scan --address 59140460-88DD-27DA-D0F8-3CE9D4E4609C --listen --timeout 20
+```
+
+Observed traffic includes events such as `e2u` (piece lifted from `e2`) and
+`e4d` (piece placed on `e4`), plus a 64-character board-state bitmap.
+
 ## Next step
 
 Capture notifications and confirm the command format before sending motor
