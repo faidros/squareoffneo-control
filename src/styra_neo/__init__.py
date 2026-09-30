@@ -3,7 +3,13 @@
 from .coords import BoardCoords, index_to_square, square_to_index
 from .controller import NeoController
 from .move_events import BoardMove, MoveEventParser
-from .move_planner import MovePlan, MovePlanner, PieceKind
+from .move_planner import (
+    MotorRouteError,
+    MovePlan,
+    MovePlanner,
+    NeoMotorRoutePlanner,
+    PieceKind,
+)
 from .protocol import BoardProtocol, BoardResponse
 
 __all__ = [
@@ -14,6 +20,8 @@ __all__ = [
     "MovePlan",
     "MoveEventParser",
     "MovePlanner",
+    "MotorRouteError",
+    "NeoMotorRoutePlanner",
     "NeoController",
     "PieceKind",
     "index_to_square",
