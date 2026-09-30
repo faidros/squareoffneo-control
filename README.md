@@ -26,11 +26,19 @@ The Square Off Neo currently identified during development is:
 - Address: `59140460-88DD-27DA-D0F8-3CE9D4E4609C`
 - Nordic UART write characteristic: `6e400002-b5a3-f393-e0a9-e50e24dcca9e`
 - Nordic UART notify characteristic: `6e400003-b5a3-f393-e0a9-e50e24dcca9e`
+- Firmware revision: `3.0.7`
+- Hardware revision: `1A1`
 
 Inspect a device's GATT services with:
 
 ```text
 python -m styra_neo.ble_scan --address 59140460-88DD-27DA-D0F8-3CE9D4E4609C
+```
+
+Inspect all Neo GATT characteristics and readable values with:
+
+```text
+python -m styra_neo.ble_probe
 ```
 
 The public `mrquincle/squareoff` research matches the services found on this
